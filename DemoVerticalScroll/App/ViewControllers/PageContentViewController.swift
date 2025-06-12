@@ -58,7 +58,7 @@ class PageContentViewController: UIViewController {
                 } else {
                     playerController.player?.pause()
                 }
-          
+                
             }
             .store(in: &cancellables)
     }

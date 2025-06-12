@@ -24,13 +24,11 @@ class ExploreSectionViewController: UIViewController {
     private func loadData() {
         if let response = loadFilteredResponse() {
             self.userFeedArray = response.data.userFeedDetails
-            Task {
-                await AssetPool.shared.updateAssetPool(
-                    userFeedDetails: userFeedArray,
-                    currentIndex: 10,
-                    preloadRange: 15
-                )
-            }
+            AssetPool.shared.updateAssetPool(
+                userFeedDetails: userFeedArray,
+                currentIndex: 10,
+                preloadRange: 15
+            )
         }
     }
     
@@ -81,10 +79,8 @@ extension ExploreSectionViewController: UIPageViewControllerDelegate, UIScrollVi
         if completed,
            let currentPage = pageViewController.viewControllers?.first as? PageContentViewController {
             let verticalIndex = currentPage.verticalIndex
-            // On page change always active horizontal index will be zero
             pageTracker.updatePage(verticalIndex: verticalIndex,
                                    horizontalIndex: 0)
-            
             currentPageVC = currentPage
         }
     }
@@ -120,7 +116,6 @@ extension ExploreSectionViewController: UIPageViewControllerDataSource {
         
         let nextIndex = currentPage.verticalIndex + 1
         
-        // ✅ Prevent loading past the last index
         guard nextIndex < userFeedArray.count else {
             return nil
         }
