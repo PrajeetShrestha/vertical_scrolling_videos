@@ -58,9 +58,12 @@ class PageContentViewController: UIViewController {
                 } else {
                     playerController.player?.pause()
                 }
+          
             }
             .store(in: &cancellables)
     }
+    
+    
     private func setupUI() {
         view.backgroundColor = .white
         addChild(playerController)
@@ -71,11 +74,15 @@ class PageContentViewController: UIViewController {
         playerController.didMove(toParent: self)
         playerController.showsPlaybackControls = false
         playerController.allowsVideoFrameAnalysis = false
-        
+        setupPlayer()
+        addProfileName()
+    }
+    
+    private func addProfileName() {
         profileNameLabel.translatesAutoresizingMaskIntoConstraints = false
         profileNameLabel.text = feedDetail.userProfileDetails.name
         profileNameLabel.font = UIFont.boldSystemFont(ofSize: 20)
-        profileNameLabel.textColor = .black
+        profileNameLabel.textColor = .white
         profileNameLabel.textAlignment = .center
         profileNameLabel.numberOfLines = 1
         
@@ -86,7 +93,6 @@ class PageContentViewController: UIViewController {
             profileNameLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             profileNameLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16)
         ])
-        setupPlayer()
     }
     
     private func setupPlayer() {
@@ -94,17 +100,16 @@ class PageContentViewController: UIViewController {
             return
         }
         guard let mediaURL = URL(string: videoModel.mediaUrl) else { return }
-        Task {
-            let asset = await AssetPool.shared.getCachedAsset(for: videoModel.contentId, remoteURL: mediaURL)
-            self.asset = asset
-            let playerItem = AVPlayerItem(asset: asset)
-            playerItem.preferredForwardBufferDuration = 2.0
-            self.playerItem = playerItem
-            let player = AVQueuePlayer(playerItem: playerItem)
-            self.player = player
-            playerController.player = player
-            self.looper = AVPlayerLooper(player: player, templateItem: playerItem)
-            
-        }
+        
+        //let asset = await AssetPool.shared.getCachedAsset(for: videoModel.contentId, remoteURL: mediaURL)
+        let asset =  AssetPool.shared.getAsset(remoteURL: mediaURL)
+        self.asset = asset
+        let playerItem = AVPlayerItem(asset: asset)
+        playerItem.preferredForwardBufferDuration = 2.0
+        self.playerItem = playerItem
+        let player = AVQueuePlayer(playerItem: playerItem)
+        self.player = player
+        playerController.player = player
+        self.looper = AVPlayerLooper(player: player, templateItem: playerItem)
     }
 }

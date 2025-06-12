@@ -10,10 +10,10 @@ import OSLog
 
 private let logger = Logger(subsystem: "com.entervu.videoplayer", category: "assetpool")
 
-actor AssetPool { // Changed to actor
+class AssetPool { // Changed to actor
     static let shared = AssetPool()
     private var cachedContentIds: Set<NSNumber> = []
-    let mediaCache = NSCache<NSNumber, AVAsset>()
+    private let mediaCache = NSCache<NSNumber, AVAsset>()
     private let cacheManager = VideoCacheManager.shared // Assume cacheManager is safe
     private let preloadRange = 15
     
@@ -29,6 +29,11 @@ actor AssetPool { // Changed to actor
         }
     }
     
+    func getAsset(remoteURL: URL) -> AVAsset {
+        let urlAsset = AVURLAsset(url: remoteURL)
+        return urlAsset
+    }
+    
     func updateAssetPool(userFeedDetails: [UserFeedDetail], currentIndex: Int, preloadRange: Int) {
         // Calculate start and end indices for preloading
         let startIndex = max(0, currentIndex - preloadRange)
@@ -36,9 +41,17 @@ actor AssetPool { // Changed to actor
         if endIndex < 1 { return }
         // Collect contentIds within the preload range
         var contentIdsInRange: Set<Int> = []
-
         
-        // Remove assets outside the preload range
+        // Preload assets within the range
+        for index in startIndex...endIndex {
+            let userFeed = userFeedDetails[index]
+            // Filter out nil videos and access mediaFullUrl and contentId
+            for video in userFeed.videos.compactMap({ $0 }) {
+                contentIdsInRange.insert(video.contentId)
+                preloadMedia(mediaFullUrl: video.mediaUrl, contentId: video.contentId)
+            }
+        }
+        
         removeAssetsOutsideRange(keepingContentIds: contentIdsInRange)
     }
     
@@ -61,7 +74,7 @@ actor AssetPool { // Changed to actor
         if let cachedURL = cacheManager.cachedFileURL(forContentID: contentId) {
             // Local file: No need to preload, just create the asset
             urlToPreload = cachedURL
-            newAsset = AVAsset(url: urlToPreload)
+            newAsset = AVURLAsset(url: urlToPreload)
             self.cachedContentIds.insert(cacheKey)
             mediaCache.setObject(newAsset, forKey: cacheKey)
             logger.debug("Using cached asset for contentID \(contentId) without preloading")
@@ -70,7 +83,7 @@ actor AssetPool { // Changed to actor
             urlToPreload = url
             logger.debug("Will preload remote asset for contentID \(contentId)")
             cacheManager.cacheVideoInBackground(from: url, contentID: contentId)
-            newAsset = AVAsset(url: urlToPreload)
+            newAsset = AVURLAsset(url: urlToPreload)
             Task {
                 try await newAsset.load(.duration, .isPlayable)
             }//preloader.preloadAsset(for: urlToPreload, contentID: String(contentId))

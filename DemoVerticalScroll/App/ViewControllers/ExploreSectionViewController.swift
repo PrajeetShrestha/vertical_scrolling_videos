@@ -24,11 +24,17 @@ class ExploreSectionViewController: UIViewController {
     private func loadData() {
         if let response = loadFilteredResponse() {
             self.userFeedArray = response.data.userFeedDetails
+            Task {
+                await AssetPool.shared.updateAssetPool(
+                    userFeedDetails: userFeedArray,
+                    currentIndex: 10,
+                    preloadRange: 15
+                )
+            }
         }
     }
     
     private func setupCoreUI() {
-        // Initialize vertical UIPageViewController
         verticalPageViewController = UIPageViewController(
             transitionStyle: .scroll,
             navigationOrientation: .vertical,
